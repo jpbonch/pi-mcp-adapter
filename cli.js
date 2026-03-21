@@ -8,9 +8,13 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const EXT_DIR = path.join(os.homedir(), ".pi", "agent", "extensions", "pi-mcp-adapter");
-const SETTINGS_FILE = path.join(os.homedir(), ".pi", "agent", "settings.json");
-const EXT_PATH = "~/.pi/agent/extensions/pi-mcp-adapter/index.ts";
+const DEFAULT_AGENT_DIR_SEGMENTS = [".pi", "agent"];
+const DEFAULT_AGENT_DIR = path.join(os.homedir(), ...DEFAULT_AGENT_DIR_SEGMENTS);
+const DEFAULT_AGENT_DIR_DISPLAY = `~/${DEFAULT_AGENT_DIR_SEGMENTS.join("/")}`;
+const EXT_DIR = path.join(DEFAULT_AGENT_DIR, "extensions", "pi-mcp-adapter");
+const SETTINGS_FILE = path.join(DEFAULT_AGENT_DIR, "settings.json");
+const EXT_PATH = `${DEFAULT_AGENT_DIR_DISPLAY}/extensions/pi-mcp-adapter/index.ts`;
+const MCP_CONFIG_PATH = `${DEFAULT_AGENT_DIR_DISPLAY}/mcp.json`;
 
 const FILES = [
   "index.ts",
@@ -86,7 +90,8 @@ async function main() {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2) + "\n");
 
   console.log("\nInstallation complete!");
-  console.log("\nCreate ~/.pi/agent/mcp.json to configure MCP servers.");
+  console.log(`\nCreate ${MCP_CONFIG_PATH} to configure MCP servers.`);
+  console.log("If PI_CODING_AGENT_DIR is set in your Pi environment, use that directory instead of the default path above.");
   console.log("Restart pi to load the extension.");
 }
 
