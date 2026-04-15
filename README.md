@@ -211,6 +211,8 @@ MCP servers can ship interactive UIs via the [MCP UI](https://github.com/MCP-UI-
 
 **Native rendering:** On macOS, if [Glimpse](https://github.com/hazat/glimpse) is installed (`pi install npm:glimpseui`), UIs open in a native WKWebView window instead of a browser tab. Set `MCP_UI_VIEWER=browser` to force the browser, or `MCP_UI_VIEWER=glimpse` to require native rendering.
 
+**Embedding in standalone binaries:** Set `MCP_APP_BRIDGE_BUNDLE_PATH` to point at a copy of `app-bridge.bundle.js` on the real filesystem when embedding pi-mcp-adapter in a packaged distribution where the package's own files aren't readable via `fs` (e.g. apps shipping a `bun build --compile` binary, where files inside `/$bunfs/` are inaccessible).
+
 **Bidirectional communication:** The UI talks back. When it sends a prompt or intent, the message is stored and `triggerTurn()` wakes the agent. The agent retrieves messages via `mcp({ action: "ui-messages" })` and responds, enabling conversational UIs where the app and agent collaborate in real-time.
 
 **Session reuse:** When the agent calls the same tool again while its UI is already open, the adapter pushes the new result to the existing window instead of replacing it. This enables live updates — the agent can refine a chart, add data, or respond to user input without losing the current view. Different tools still replace the session as before.

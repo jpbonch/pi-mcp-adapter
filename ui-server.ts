@@ -297,8 +297,12 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       }
 
       if (method === "GET" && url.pathname === "/app-bridge.bundle.js") {
-        // Serve the pre-bundled AppBridge module
-        const bundlePath = path.join(import.meta.dirname, "app-bridge.bundle.js");
+        // Serve the pre-bundled AppBridge module.
+        // MCP_APP_BRIDGE_BUNDLE_PATH lets embedders (e.g. apps shipping a bun-compiled
+        // binary, where files inside /$bunfs/ are not readable via fs) point at a
+        // bundled copy on the real filesystem.
+        const bundlePath = process.env.MCP_APP_BRIDGE_BUNDLE_PATH
+          ?? path.join(import.meta.dirname, "app-bridge.bundle.js");
         try {
           const content = await fs.readFile(bundlePath, "utf-8");
           res.writeHead(200, {

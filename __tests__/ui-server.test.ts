@@ -267,6 +267,29 @@ describe("UiServer", () => {
         expect(res.headers["cache-control"]).toContain("max-age");
       }
     });
+
+    it("respects MCP_APP_BRIDGE_BUNDLE_PATH env override", async () => {
+      const fs = await import("node:fs/promises");
+      const os = await import("node:os");
+      const path = await import("node:path");
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcp-bundle-"));
+      const customPath = path.join(tmpDir, "custom-bundle.js");
+      const sentinel = "// custom-bundle-sentinel-" + Date.now();
+      await fs.writeFile(customPath, sentinel, "utf-8");
+      const prev = process.env.MCP_APP_BRIDGE_BUNDLE_PATH;
+      process.env.MCP_APP_BRIDGE_BUNDLE_PATH = customPath;
+      try {
+        handle = await startUiServer(createServerOptions());
+        const url = `http://localhost:${handle.port}/app-bridge.bundle.js`;
+        const res = await request(url);
+        expect(res.status).toBe(200);
+        expect(res.body).toContain(sentinel);
+      } finally {
+        if (prev === undefined) delete process.env.MCP_APP_BRIDGE_BUNDLE_PATH;
+        else process.env.MCP_APP_BRIDGE_BUNDLE_PATH = prev;
+        await fs.rm(tmpDir, { recursive: true, force: true });
+      }
+    });
   });
 
   describe("GET /events (SSE)", () => {
