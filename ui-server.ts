@@ -2,6 +2,10 @@ import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+// Inlined at build time via bun's `type: "text"` import. This avoids fs.readFile
+// at runtime, which fails inside a `bun build --compile` binary because the
+// package's own files live under /$bunfs/ and are not readable via fs.
+import APP_BRIDGE_BUNDLE_INLINED from "./app-bridge.bundle.js" with { type: "text" };
 import { buildAllowAttribute } from "@modelcontextprotocol/ext-apps/app-bridge";
 import type {
   CallToolRequest,
@@ -297,22 +301,23 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       }
 
       if (method === "GET" && url.pathname === "/app-bridge.bundle.js") {
-        // Serve the pre-bundled AppBridge module.
-        // MCP_APP_BRIDGE_BUNDLE_PATH lets embedders (e.g. apps shipping a bun-compiled
-        // binary, where files inside /$bunfs/ are not readable via fs) point at a
-        // bundled copy on the real filesystem.
-        const bundlePath = process.env.MCP_APP_BRIDGE_BUNDLE_PATH
-          ?? path.join(import.meta.dirname, "app-bridge.bundle.js");
-        try {
-          const content = await fs.readFile(bundlePath, "utf-8");
-          res.writeHead(200, {
-            "Content-Type": "application/javascript",
-            "Cache-Control": "public, max-age=31536000",
-          });
-          res.end(content);
-        } catch {
-          sendJson(res, 500, { ok: false, error: "Bundle not found" });
+        // Bundle is inlined at build time (see import at top). MCP_APP_BRIDGE_BUNDLE_PATH
+        // remains as an opt-in escape hatch for embedders that want to swap implementations.
+        let content = APP_BRIDGE_BUNDLE_INLINED;
+        const override = process.env.MCP_APP_BRIDGE_BUNDLE_PATH;
+        if (override) {
+          try {
+            content = await fs.readFile(override, "utf-8");
+          } catch {
+            sendJson(res, 500, { ok: false, error: "Bundle override path not readable" });
+            return;
+          }
         }
+        res.writeHead(200, {
+          "Content-Type": "application/javascript",
+          "Cache-Control": "public, max-age=31536000",
+        });
+        res.end(content);
         return;
       }
 
