@@ -29,6 +29,14 @@ function getGlimpseBinaryPath(): string | null {
   const envOverride = process.env.GLIMPSE_BINARY || process.env.GLIMPSE_BINARY_PATH;
   if (envOverride && existsSync(envOverride)) return envOverride;
 
+  // Sibling of the calling executable. Convention for apps that ship a compiled
+  // bun binary bundled with glimpse — they only need to place `glimpse` next to
+  // their own executable and skip configuring env vars.
+  if (process.execPath) {
+    const sibling = join(dirname(process.execPath), "glimpse");
+    if (existsSync(sibling)) return sibling;
+  }
+
   // Local node_modules (dev path)
   try {
     const require = createRequire(import.meta.url);
